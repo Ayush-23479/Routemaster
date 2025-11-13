@@ -353,6 +353,8 @@ public class RouteOptimizerService {
                 Double distance = route.getTotalDistance();
                 if (distance != null && distance > 0) {
                     capacity = distance;
+               
+                
                 }
                 
                 RouteInfo info = new RouteInfo(
