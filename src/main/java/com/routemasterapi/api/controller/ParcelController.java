@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.*;
 import com.routemasterapi.api.model.ParcelRequestBody;
 import com.routemasterapi.api.model.ParcelIdRequest;
 import com.routemasterapi.api.service.ParcelService;
+import com.routemasterapi.api.entity.customerentity;
+import com.routemasterapi.api.repositories.CustomerRepository;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/parcels")
@@ -17,6 +21,9 @@ public class ParcelController {
 
     @Autowired
     private ParcelService parcelService;
+
+    @Autowired
+    private CustomerRepository customerRepository;
 
     /**
      * Create new parcel
@@ -53,7 +60,7 @@ public class ParcelController {
     }
 
     /**
-     * Get all parcels (paginated)
+     * Get all parcels (paginated) - ADMIN ONLY
      * Endpoint: GET /api/parcels?pageNumber=0&size=10
      * Requires: JWT Token
      */
@@ -69,10 +76,42 @@ public class ParcelController {
     }
 
     /**
+     * ✅ NEW ENDPOINT - Get current user's parcels
+     * Endpoint: GET /api/parcels/my-parcels?pageNumber=0&size=10
+     * Requires: JWT Token
+     * For: USER and ADMIN
+     */
+    @GetMapping("/my-parcels")
+    public ResponseEntity<?> getMyParcels(
+            @RequestParam(defaultValue = "0") final Integer pageNumber,
+            @RequestParam(defaultValue = "10") final Integer size) {
+        try {
+            // Get current logged-in user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUserEmail = authentication.getName();
+            
+            System.out.println("📦 User " + currentUserEmail + " requesting their parcels");
+            
+            // Find customer by email
+            Optional<customerentity> customerOpt = customerRepository.findByEmail(currentUserEmail);
+            if (customerOpt.isEmpty()) {
+                return ResponseEntity.status(404).body("❌ User profile not found");
+            }
+            
+            // Get their customer ID
+            int customerId = customerOpt.get().getCustomerId();
+            
+            // Return parcels for this customer
+            return ResponseEntity.ok(parcelService.listcustomerparcelstatusfromdb(pageNumber, size, customerId));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("❌ Error loading your parcels: " + e.getMessage());
+        }
+    }
+
+    /**
      * Get parcels for specific customer
      * Endpoint: GET /api/parcels/customer/{customerId}?pageNumber=0&size=10
      * Requires: JWT Token
-     * Security: Users can only see their own parcels (TODO: Add validation)
      */
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<?> listCustomerParcelStatus(
@@ -80,14 +119,10 @@ public class ParcelController {
             @RequestParam(defaultValue = "0") final Integer pageNumber,
             @RequestParam(defaultValue = "10") final Integer size) {
         try {
-            // Get current user
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String currentUserEmail = authentication.getName();
             
             System.out.println("📦 User " + currentUserEmail + " requesting parcels for customer ID: " + customerId);
-            
-            // TODO: Add validation - users should only see their own parcels
-            // For now, allowing all authenticated users to see any customer's parcels
             
             return ResponseEntity.ok(parcelService.listcustomerparcelstatusfromdb(pageNumber, size, customerId));
         } catch (Exception e) {

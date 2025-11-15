@@ -1,6 +1,8 @@
+
 package com.routemasterapi.api.controller;
 
 import com.routemasterapi.api.entity.customerentity;
+import com.routemasterapi.api.model.LoginResponse;
 import com.routemasterapi.api.repositories.CustomerRepository;
 import com.routemasterapi.api.security.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,13 +57,16 @@ public class AuthenticationController {
         // Encode password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
+        // ✅ SET DEFAULT ROLE TO USER
+        user.setRole("USER");
+
         // Save user
         customerRepository.save(user);
         return ResponseEntity.ok("✅ User registered successfully!");
     }
 
     /**
-     * ✅ Login user
+     * ✅ Login user and return role + user info
      */
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody customerentity loginRequest) {
@@ -85,9 +90,22 @@ public class AuthenticationController {
             return ResponseEntity.badRequest().body("❌ Invalid email or password.");
         }
 
-        // ✅ Generate JWT
+        // ✅ Generate JWT token
         String token = jwtTokenUtil.generateToken(user.getEmail());
         
-        return ResponseEntity.ok().body("{\"token\": \"" + token + "\"}");
+        // ✅ Get user role (default to USER if null)
+        String userRole = user.getRole() != null ? user.getRole() : "USER";
+        
+        // ✅ Create and return LoginResponse with role
+        LoginResponse response = new LoginResponse(
+            token,
+            userRole,
+            user.getCustomerId(),
+            user.getEmail(),
+            user.getFirstName(),
+            user.getLastName()
+        );
+        
+        return ResponseEntity.ok(response);
     }
 }

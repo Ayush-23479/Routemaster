@@ -34,7 +34,11 @@ public class customerentity {
     @Column(name = "Password", nullable = false)
     private String password;
 
-    // Getters & Setters
+    // ✅ NEW FIELD - ADD THIS
+    @Column(name = "Role", nullable = false)
+    private String role; // "USER" or "ADMIN"
+
+    // Existing Getters & Setters
     public int getCustomerId() { 
         return customerId; 
     }
@@ -89,5 +93,14 @@ public class customerentity {
     
     public void setPassword(String password) { 
         this.password = password; 
+    }
+
+    // ✅ NEW GETTERS & SETTERS - ADD THESE
+    public String getRole() { 
+        return role; 
+    }
+    
+    public void setRole(String role) { 
+        this.role = role; 
     }
 }
